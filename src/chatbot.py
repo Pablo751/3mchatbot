@@ -64,7 +64,7 @@ class DentalProductChatbot:
         
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4",  # Usar un modelo verificado de OpenAI
+                model="gpt-4o-mini",  # Usar un modelo verificado de OpenAI
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"Contexto del catálogo:\n{products_context}\n\n"
@@ -120,7 +120,7 @@ class DentalProductChatbot:
         
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4",  # Usar un modelo verificado de OpenAI
+                model="gpt-4o-mini",  # Usar un modelo verificado de OpenAI
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"Contexto del producto:\n{product_context}\n\n"
