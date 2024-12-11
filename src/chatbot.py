@@ -5,13 +5,20 @@ from pathlib import Path
 
 class DentalProductChatbot:
     def __init__(self, api_key: str):
-        self.client = openai.OpenAI(api_key=api_key)
+        # Inicialización simplificada del cliente OpenAI
+        self.client = openai.OpenAI(
+            api_key=api_key
+        )
+        
         # Cargar el CSV usando rutas relativas
-        csv_path = Path(__file__).parent / "data" / "Dentistas 2 - Hoja 1.csv"
-        self.df = pd.read_csv(csv_path)
-        self.create_search_indices()
-        self.conversation_history = []
-        self.last_product_index = None
+        try:
+            csv_path = Path(__file__).parent / "data" / "Dentistas 2 - Hoja 1.csv"
+            self.df = pd.read_csv(csv_path)
+            self.create_search_indices()
+            self.conversation_history = []
+            self.last_product_index = None
+        except Exception as e:
+            raise Exception(f"Error cargando el CSV: {str(e)}")
         
     def create_search_indices(self):
         """Crea índices para búsqueda eficiente"""
@@ -57,7 +64,7 @@ class DentalProductChatbot:
         
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4-0125-preview",  # Puedes cambiar esto al modelo que prefieras
+                model="gpt-4",  # Usar un modelo verificado de OpenAI
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"Contexto del catálogo:\n{products_context}\n\n"
@@ -93,9 +100,6 @@ class DentalProductChatbot:
         basadas en la información proporcionada y el contexto de la conversación. Si la pregunta es una 
         contrapregunta sobre el producto actual, enfócate en responder específicamente esa duda.
         Si la información requerida no está disponible, sugiere visitar el enlace de 'Más información'.
-        
-        Mantén un tono profesional pero amigable, y asegúrate de que tus respuestas sean claras y concisas.
-        Si mencionas características técnicas, explícalas de manera que sean fáciles de entender.
         """
         
         product_context = (
@@ -116,7 +120,7 @@ class DentalProductChatbot:
         
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4-0125-preview",  # Puedes cambiar esto al modelo que prefieras
+                model="gpt-4",  # Usar un modelo verificado de OpenAI
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"Contexto del producto:\n{product_context}\n\n"
