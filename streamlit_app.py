@@ -103,7 +103,7 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
 # Botón para limpiar el historial
 if st.sidebar.button("Limpiar conversación"):
     st.session_state.messages = []
-    st.rerun(
+    st.rerun()
 
 # Información adicional en la barra lateral
 with st.sidebar:
