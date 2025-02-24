@@ -30,29 +30,45 @@ class DentalProductChatbot:
         
     def find_relevant_product(self, query: str) -> int:
         """
-        Primera llamada a la API con logs detallados
+        Primera llamada a la API con prompt mejorado
         """
         print("\n--- INICIO BÚSQUEDA DE PRODUCTO ---")
         print(f"Query: {query}")
         
-        # Preparar el contexto
+        # Crear un contexto más detallado
         products_list = "\n".join([
-            f"{i}. {row['Nombre del producto']} - {row['Principal objetivo']}"
+            f"{i}. {row['Nombre del producto']}\n   Objetivo: {row['Principal objetivo']}\n   Ventajas: {row['Ventajas']}"
             for i, row in self.df.iterrows()
         ])
         
-        print("Productos disponibles:")
-        print(products_list)
+        system_prompt = """Eres un experto asistente dental de 3M. Tu tarea es identificar el producto dental más 
+        apropiado para la consulta del usuario. Analiza cuidadosamente la consulta y los productos disponibles.
+        
+        REGLAS:
+        - Debes responder SOLO con el número del producto más relevante (0-13)
+        - Considera sinónimos y términos relacionados
+        - Si la consulta menciona niños/infantil, busca productos apropiados para uso pediátrico
+        - Si no estás completamente seguro, aún así sugiere el producto más cercano
+        - Responde -1 SOLO si la consulta es completamente irrelevante o imposible de relacionar
+        """
+        
+        user_prompt = f"""CONSULTA DEL USUARIO: {query}
+
+    PRODUCTOS DISPONIBLES:
+    {products_list}
+
+    Basado en la consulta, ¿cuál es el número (0-13) del producto más relevante?
+    Responde SOLO con el número."""
         
         try:
             print("\n>> Llamando a OpenAI API...")
             response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o",
                 messages=[
-                    {"role": "system", "content": "Eres un asistente dental. Debes responder SOLO con el número del producto más relevante (0-13) o -1 si no hay match."},
-                    {"role": "user", "content": f"PRODUCTOS:\n{products_list}\n\nCONSULTA: {query}\n\nResponde SOLO con el número:"}
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
                 ],
-                temperature=0.1
+                temperature=0.3  # Aumentado ligeramente para permitir más flexibilidad
             )
             
             result = response.choices[0].message.content.strip()
@@ -113,7 +129,7 @@ class DentalProductChatbot:
         
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",  # Usar un modelo verificado de OpenAI
+                model="gpt-4o",  # Usar un modelo verificado de OpenAI
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"Contexto del producto:\n{product_context}\n\n"

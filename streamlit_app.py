@@ -65,8 +65,19 @@ def get_chatbot():
         if hasattr(chatbot, 'df'):
             st.write("Información del DataFrame:")
             st.write(f"Dimensiones: {chatbot.df.shape}")
-            st.write("Primeras filas:")
-            st.write(chatbot.df.head())
+            
+            # Opción 1: Usando st.dataframe con altura fija
+            st.write("Productos disponibles:")
+            st.dataframe(
+                chatbot.df,
+                height=400,  # Altura fija en píxeles
+                hide_index=False,  # Mostrar índices
+                column_config={
+                    "Nombre del producto": st.column_config.TextColumn("Nombre del producto", width="large"),
+                    "Principal objetivo": st.column_config.TextColumn("Principal objetivo", width="large"),
+                    "Instrucciones de Uso": st.column_config.TextColumn("Instrucciones", width="large"),
+                }
+            )
         
         return chatbot
     except Exception as e:
@@ -74,6 +85,8 @@ def get_chatbot():
         st.error("Detalles del error para debugging:")
         st.code(str(e))
         return None
+
+
 
 # Inicializar el chatbot
 chatbot = get_chatbot()
