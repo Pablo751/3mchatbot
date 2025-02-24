@@ -51,11 +51,23 @@ def get_chatbot():
     try:
         # Verificar que el archivo CSV existe
         csv_path = Path(__file__).parent / "src" / "data" / "Dentistas 2 - Hoja 1.csv"
+        st.write(f"Buscando CSV en: {csv_path}")
+        
         if not csv_path.exists():
             st.error(f"No se encontró el archivo CSV en: {csv_path}")
             return None
-            
+        
+        st.success(f"CSV encontrado en: {csv_path}")
+        
         chatbot = DentalProductChatbot(api_key=api_key)
+        
+        # Mostrar información del DataFrame
+        if hasattr(chatbot, 'df'):
+            st.write("Información del DataFrame:")
+            st.write(f"Dimensiones: {chatbot.df.shape}")
+            st.write("Primeras filas:")
+            st.write(chatbot.df.head())
+        
         return chatbot
     except Exception as e:
         st.error(f"Error inicializando el chatbot: {str(e)}")
