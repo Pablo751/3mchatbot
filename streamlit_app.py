@@ -92,13 +92,17 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
     try:
         # Obtener respuesta del chatbot
         with st.chat_message("assistant"):
-            response = chatbot.process_query(prompt)
-            st.markdown(response)
+            with st.spinner('Procesando tu consulta...'):  # Add loading indicator
+                response = chatbot.process_query(prompt)
+                st.markdown(response)
             
         # Agregar respuesta del asistente al historial
         st.session_state.messages.append({"role": "assistant", "content": response})
     except Exception as e:
         st.error(f"Error procesando la consulta: {str(e)}")
+        # Log detailed error for debugging
+        st.error("Detalles del error:")
+        st.code(str(e))
 
 # Botón para limpiar el historial
 if st.sidebar.button("Limpiar conversación"):
