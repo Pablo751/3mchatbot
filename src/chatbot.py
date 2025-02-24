@@ -29,56 +29,54 @@ class DentalProductChatbot:
         )
         
     def find_relevant_product(self, query: str) -> int:
-        # Añadir logs al inicio
-        print(f"Iniciando búsqueda para query: {query}")
-        print(f"DataFrame shape: {self.df.shape}")
-        print(f"Primeras filas del DataFrame:")
-        print(self.df.head())
-        
-        system_prompt = """
-        Eres un asistente especializado en productos dentales. Tu tarea es identificar 
-        qué producto del catálogo es más relevante para la consulta del usuario.
-        Si la pregunta parece ser una contrapregunta sobre el último producto discutido,
-        mantén ese mismo producto. Si es una nueva consulta, busca un nuevo producto relevante.
-        Debes responder SOLO con el número de índice (0-based) del producto más relevante.
-        Si no estás seguro, responde con -1.
         """
+        Primera llamada a la API con logs detallados
+        """
+        print("\n--- INICIO BÚSQUEDA DE PRODUCTO ---")
+        print(f"Query: {query}")
         
-        # Preparar el contexto con los productos y la conversación anterior
-        products_context = "\n\n".join([
-            f"Índice {i}:\nNombre: {row['Nombre del producto']}\n"
-            f"Objetivo: {row['Principal objetivo']}\n"
-            f"Ventajas: {row['Ventajas']}"
+        # Preparar el contexto
+        products_list = "\n".join([
+            f"{i}. {row['Nombre del producto']} - {row['Principal objetivo']}"
             for i, row in self.df.iterrows()
         ])
         
-        print(f"Número de productos en contexto: {len(self.df)}")
+        print("Productos disponibles:")
+        print(products_list)
         
         try:
+            print("\n>> Llamando a OpenAI API...")
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",  # Cambiado a un modelo más común
+                model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Contexto del catálogo:\n{products_context}\n\n"
-                                              f"Consulta actual del usuario: {query}"}
+                    {"role": "system", "content": "Eres un asistente dental. Debes responder SOLO con el número del producto más relevante (0-13) o -1 si no hay match."},
+                    {"role": "user", "content": f"PRODUCTOS:\n{products_list}\n\nCONSULTA: {query}\n\nResponde SOLO con el número:"}
                 ],
-                temperature=0.3
+                temperature=0.1
             )
             
             result = response.choices[0].message.content.strip()
-            print(f"Respuesta de la API: {result}")
+            print(f"Respuesta cruda de OpenAI: '{result}'")
             
             try:
                 index = int(result)
-                print(f"Índice encontrado: {index}")
-                return index
-            except ValueError as ve:
-                print(f"Error convirtiendo respuesta a índice: {ve}")
+                print(f"Índice convertido: {index}")
+                if 0 <= index < len(self.df):
+                    product = self.df.iloc[index]['Nombre del producto']
+                    print(f"Producto encontrado: {product}")
+                    return index
+                else:
+                    print(f"ERROR: Índice {index} fuera de rango [0-{len(self.df)-1}]")
+                    return -1
+            except ValueError:
+                print(f"ERROR: No se pudo convertir '{result}' a número")
                 return -1
                 
         except Exception as e:
-            print(f"Error en la API de OpenAI: {str(e)}")
+            print(f"ERROR en API OpenAI: {str(e)}")
             return -1
+        finally:
+            print("--- FIN BÚSQUEDA DE PRODUCTO ---\n")
 
     def get_product_response(self, product_index: int, query: str) -> str:
         """
@@ -133,22 +131,39 @@ class DentalProductChatbot:
 
     def process_query(self, user_query: str) -> str:
         """
-        Procesa la consulta del usuario y retorna una respuesta
+        Procesa la consulta del usuario y retorna una respuesta con logs detallados
         """
+        print("\n=== INICIO PROCESAMIENTO DE CONSULTA ===")
+        print(f"Consulta recibida: {user_query}")
+        
         # Agregar la consulta del usuario a la historia
         self.conversation_history.append((True, user_query))
+        print("Historia de conversación actualizada")
         
         # Primera llamada: encontrar el producto relevante
+        print("\n>> Buscando producto relevante...")
         product_index = self.find_relevant_product(user_query)
+        print(f"Índice de producto retornado: {product_index}")
         
         if product_index == -1:
+            print("WARNING: find_relevant_product() retornó -1")
+            print("Razón posible: No se encontró match o hubo error en la llamada a la API")
             response = "Lo siento, no pude encontrar un producto específico para tu consulta. ¿Podrías ser más específico sobre lo que estás buscando?"
         else:
+            print(f"\n>> Generando respuesta para producto {product_index}...")
             # Actualizar el último producto discutido
             self.last_product_index = product_index
-            response = self.get_product_response(product_index, user_query)
+            try:
+                product_name = self.df.iloc[product_index]['Nombre del producto']
+                print(f"Producto seleccionado: {product_name}")
+                response = self.get_product_response(product_index, user_query)
+            except Exception as e:
+                print(f"ERROR en get_product_response: {str(e)}")
+                response = "Hubo un error generando la respuesta. Por favor, intenta nuevamente."
         
         # Agregar la respuesta a la historia
         self.conversation_history.append((False, response))
+        print("\n>> Respuesta final generada")
+        print("=== FIN PROCESAMIENTO DE CONSULTA ===\n")
         
         return response
