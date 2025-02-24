@@ -78,12 +78,11 @@ class DentalProductChatbot:
             try:
                 index = int(response.choices[0].message.content.strip())
                 return index
-            except ValueError:
-                return -1
+            except ValueError as ve:
+                raise Exception(f"Error parsing API response: {ve}. Response: {response.choices[0].message.content}")
             
         except Exception as e:
-            print(f"Error en la API: {e}")
-            return -1
+            raise Exception(f"OpenAI API error: {str(e)}")  # Propagate error to Streamlit
 
     def get_product_response(self, product_index: int, query: str) -> str:
         """
