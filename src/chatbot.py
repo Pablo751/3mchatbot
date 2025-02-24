@@ -29,10 +29,12 @@ class DentalProductChatbot:
         )
         
     def find_relevant_product(self, query: str) -> int:
-        """
-        Primera llamada a la API: Encuentra el producto más relevante
-        considerando el contexto de la conversación
-        """
+        # Añadir logs al inicio
+        print(f"Iniciando búsqueda para query: {query}")
+        print(f"DataFrame shape: {self.df.shape}")
+        print(f"Primeras filas del DataFrame:")
+        print(self.df.head())
+        
         system_prompt = """
         Eres un asistente especializado en productos dentales. Tu tarea es identificar 
         qué producto del catálogo es más relevante para la consulta del usuario.
@@ -50,39 +52,33 @@ class DentalProductChatbot:
             for i, row in self.df.iterrows()
         ])
         
-        # Añadir contexto de la conversación reciente
-        conversation_context = "\n".join([
-            f"{'Usuario' if is_user else 'Asistente'}: {msg}"
-            for is_user, msg in self.conversation_history[-3:]  # Últimos 3 mensajes
-        ]) if self.conversation_history else ""
-        
-        # Incluir información sobre el último producto discutido
-        last_product_context = ""
-        if self.last_product_index is not None:
-            last_product = self.df.iloc[self.last_product_index]
-            last_product_context = f"\nÚltimo producto discutido (Índice {self.last_product_index}): {last_product['Nombre del producto']}"
+        print(f"Número de productos en contexto: {len(self.df)}")
         
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",  # Usar un modelo verificado de OpenAI
+                model="gpt-4o-mini",  # Cambiado a un modelo más común
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"Contexto del catálogo:\n{products_context}\n\n"
-                                              f"Conversación reciente:\n{conversation_context}\n"
-                                              f"{last_product_context}\n\n"
                                               f"Consulta actual del usuario: {query}"}
                 ],
                 temperature=0.3
             )
             
+            result = response.choices[0].message.content.strip()
+            print(f"Respuesta de la API: {result}")
+            
             try:
-                index = int(response.choices[0].message.content.strip())
+                index = int(result)
+                print(f"Índice encontrado: {index}")
                 return index
             except ValueError as ve:
-                raise Exception(f"Error parsing API response: {ve}. Response: {response.choices[0].message.content}")
-            
+                print(f"Error convirtiendo respuesta a índice: {ve}")
+                return -1
+                
         except Exception as e:
-            raise Exception(f"OpenAI API error: {str(e)}")  # Propagate error to Streamlit
+            print(f"Error en la API de OpenAI: {str(e)}")
+            return -1
 
     def get_product_response(self, product_index: int, query: str) -> str:
         """
