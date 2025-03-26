@@ -63,7 +63,7 @@ class DentalProductChatbot:
         try:
             print("\n>> Llamando a OpenAI API...")
             response = self.client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
@@ -129,7 +129,7 @@ class DentalProductChatbot:
         
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4o",  # Usar un modelo verificado de OpenAI
+                model="gpt-4o-mini",  # Usar un modelo verificado de OpenAI
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"Contexto del producto:\n{product_context}\n\n"
